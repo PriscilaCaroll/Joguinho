@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo da Memória - Animais</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .stats {
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(5, 100px);
+      grid-gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      width: 100px;
+      height: 100px;
+      background-color: #3498db;
+      color: #ffffff;
+      font-size: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 10px;
+      user-select: none;
+    }
+
+    .flipped, .matched {
+      background-color: #2ecc71;
+      color: #000;
+      cursor: default;
+    }
+
+    #victory {
+      display: none;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      margin-top: 20px;
+    }
+
+    #victory h2 {
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🐶 Jogo da Memória: Animais</h1>
+
+  <div class="stats">
+    ⏱️ Tempo: <span id="timer">0</span>s |
+    🎯 Tentativas: <span id="attempts">0</span> |
+    ✅ Acertos: <span id="matches">0</span>
+  </div>
+
+  <div class="game-board" id="gameBoard"></div>
+
+  <div id="victory">
+    <h2>🎉 Parabéns! Você venceu!</h2>
+    <p>Tempo: <span id="finalTime"></span>s | Tentativas: <span id="finalAttempts"></span></p>
+    <button onclick="restartGame()">🔁 Jogar Novamente</button>
+  </div>
+
+  <!-- Sons -->
+  <audio id="flipSound" src="https://www.myinstants.com/media/sounds/button-10.mp3"></audio>
+  <audio id="matchSound" src="https://www.myinstants.com/media/sounds/correct.mp3"></audio>
+  <audio id="failSound" src="https://www.myinstants.com/media/sounds/wrong-answer.mp3"></audio>
+
+  <script>
+    const animalEmojis = ['🐶', '🐱', '🐰', '🦁', '🐸'];
+    let cards = [];
+    let gameBoard = document.getElementById('gameBoard');
+
+    let firstCard = null;
+    let lock = false;
+    let attempts = 0;
+    let matches = 0;
+    let timer = 0;
+    let interval;
+
+    const timerEl = document.getElementById('timer');
+    const attemptsEl = document.getElementById('attempts');
+    const matchesEl = document.getElementById('matches');
+    const victoryEl = document.getElementById('victory');
+    const finalTimeEl = document.getElementById('finalTime');
+    const finalAttemptsEl = document.getElementById('finalAttempts');
+
+    const flipSound = document.getElementById('flipSound');
+    const matchSound = document.getElementById('matchSound');
+    const failSound = document.getElementById('failSound');
+
+    function startTimer() {
+      interval = setInterval(() => {
+        timer++;
+        timerEl.textContent = timer;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(interval);
+    }
+
+    function shuffle(array) {
+      return array.sort(() => 0.5 - Math.random());
+    }
+
+    function createBoard() {
+      cards = shuffle([...animalEmojis, ...animalEmojis]);
+      gameBoard.innerHTML = '';
+      cards.forEach((emoji, index) => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.emoji = emoji;
+        card.dataset.index = index;
+        card.textContent = '';
+        gameBoard.appendChild(card);
+      });
+    }
+
+    function showVictoryScreen() {
+      stopTimer();
+      finalTimeEl.textContent = timer;
+      finalAttemptsEl.textContent = attempts;
+      victoryEl.style.display = 'block';
+    }
+
+    function restartGame() {
+      firstCard = null;
+      lock = false;
+      attempts = 0;
+      matches = 0;
+      timer = 0;
+      timerEl.textContent = 0;
+      attemptsEl.textContent = 0;
+      matchesEl.textContent = 0;
+      victoryEl.style.display = 'none';
+      createBoard();
+    }
+
+    gameBoard.addEventListener('click', (e) => {
+      const clicked = e.target;
+      if (!clicked.classList.contains('card') || clicked.classList.contains('flipped') || clicked.classList.contains('matched') || lock) return;
+
+      flipSound.play();
+      clicked.textContent = clicked.dataset.emoji;
+      clicked.classList.add('flipped');
+
+      if (!firstCard) {
+        firstCard = clicked;
+        if (timer === 0) startTimer();
+      } else {
+        lock = true;
+        attempts++;
+        attemptsEl.textContent = attempts;
+
+        if (clicked.dataset.emoji === firstCard.dataset.emoji) {
+          matchSound.play();
+          clicked.classList.add('matched');
+          firstCard.classList.add('matched');
+          matches++;
+          matchesEl.textContent = matches;
+          firstCard = null;
+          lock = false;
+
+          if (matches === animalEmojis.length) {
+            setTimeout(showVictoryScreen, 500);
+          }
+        } else {
+          failSound.play();
+          setTimeout(() => {
+            clicked.textContent = '';
+            firstCard.textContent = '';
+            clicked.classList.remove('flipped');
+            firstCard.classList.remove('flipped');
+            firstCard = null;
+            lock = false;
+          }, 1000);
+        }
+      }
+    });
+
+    createBoard();
+  </script>
+
+</body>
+</html>
